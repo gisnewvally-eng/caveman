@@ -263,14 +263,29 @@ function createCoinEffect(x, y) {
   this.tweens.add({ targets: coin, y: y - 50, alpha: 0, duration: 600, onComplete: () => coin.destroy() });
 }
 function glowAroundCart() {
-  if (glowEffect) glowEffect.destroy();
-  glowEffect = game.scene.keys.GameScene.add.sprite(cart.x, cart.y, 'glow').setScale(1.5).setAlpha(0.8);
+  if (glowEffect && glowEffect.active) {
+    glowEffect.destroy();
+  }
+
+  const scene = game.scene.keys.GameScene;
+  glowEffect = scene.add.sprite(cart.x, cart.y, 'glow').setScale(1.5).setAlpha(0.8);
   glowEffect.setBlendMode(Phaser.BlendModes.ADD);
-  game.scene.keys.GameScene.tweens.add({
-    targets: glowEffect, alpha: 0, scale: 2, duration: 600,
-    ease: 'Cubic.easeOut', onComplete: () => { glowEffect.destroy(); glowEffect = null; }
+
+  scene.tweens.add({
+    targets: glowEffect,
+    alpha: 0,
+    scale: 2,
+    duration: 600,
+    ease: 'Cubic.easeOut',
+    onComplete: () => {
+      if (glowEffect && glowEffect.active) {
+        glowEffect.destroy();
+      }
+      glowEffect = null;
+    }
   });
 }
+
 function switchWeapon() { weaponType = weaponType === 'pickaxe' ? 'dynamite' : 'pickaxe'; }
 
 /* ==================== مشهد المتجر ==================== */
@@ -298,6 +313,7 @@ function saveData() {
 </script>
 </body>
 </html>
+
 
 
 

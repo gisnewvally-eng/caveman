@@ -89,28 +89,55 @@ function preloadGame() {
   this.load.audio('explosionSound', 'sounds/explosion.mp3');
 }
 function createGame() {
-  this.add.image(400, 300, 'background').setScale(1.2);
-  cart = this.physics.add.sprite(400, 520, 'cart').setScale(0.8).setCollideWorldBounds(true);
+  // خلفية مصغرة ومتناسقة
+  this.add.image(400, 300, 'background').setScale(0.9);
+
+  // عربة اللاعب 🚃
+  cart = this.physics.add.sprite(400, 520, 'cart').setScale(0.5);
+  cart.setCollideWorldBounds(true);
+
+  // المجموعات
   rocks = this.physics.add.group();
   projectiles = this.physics.add.group();
   cursors = this.input.keyboard.createCursorKeys();
 
-  scoreText = this.add.text(16, 16, 'النقاط: 0', { fontSize: '22px', fill: '#fff' });
-  coinText = this.add.text(16, 45, 'العملات: ' + coins, { fontSize: '22px', fill: '#ffd700' });
+  // النصوص
+  scoreText = this.add.text(16, 16, 'النقاط: 0', { fontSize: '20px', fill: '#fff' });
+  coinText = this.add.text(16, 40, 'العملات: ' + coins, { fontSize: '20px', fill: '#ffd700' });
 
-  this.input.on('pointerdown', () => shootProjectile.call(this));
-  this.physics.add.collider(projectiles, rocks, hitRock, null, this);
-
-  this.time.addEvent({ delay: 1500, callback: spawnRock, callbackScope: this, loop: true });
-  this.time.addEvent({ delay: 8000, callback: switchWeapon, callbackScope: this, loop: true });
-
+  // الأصوات
   this.throwSound = this.sound.add('throw');
   this.hitSound = this.sound.add('hit');
   this.coinSound = this.sound.add('coin');
   this.explosionSound = this.sound.add('explosionSound');
 
+  // شاشة البداية 🟢
+  const startText = this.add.text(400, 300, 'اضغط للبدء', { fontSize: '32px', fill: '#00ff00' }).setOrigin(0.5);
+  this.input.once('pointerdown', () => {
+    startText.destroy();
+    startGame.call(this);
+  });
+}
+
+// دالة بدء اللعب الحقيقي
+function startGame() {
+  this.input.on('pointerdown', () => shootProjectile.call(this));
+  this.physics.add.collider(projectiles, rocks, hitRock, null, this);
+
+  // تأخير البداية قليلاً
+  this.time.addEvent({
+    delay: 1000,
+    callback: () => {
+      this.time.addEvent({ delay: 1800, callback: spawnRock, callbackScope: this, loop: true });
+    },
+    callbackScope: this
+  });
+
+  this.time.addEvent({ delay: 8000, callback: switchWeapon, callbackScope: this, loop: true });
+
   score = 0;
 }
+
 function updateGame() {
   cart.setVelocityX(0);
   if (cursors.left.isDown) cart.setVelocityX(-250);
@@ -210,3 +237,4 @@ function saveData() {
 </script>
 </body>
 </html>
+

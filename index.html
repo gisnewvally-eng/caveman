@@ -124,11 +124,11 @@ function preloadGame() {
   this.load.audio('explosionSound', 'sounds/explosion.mp3');
 }
 function createGame() {
-  // خلفية مصغرة ومتناسقة
-  this.add.image(400, 300, 'background').setScale(0.9);
+  // الخلفية
+  this.add.image(400, 300, 'background').setScale(0.85);
 
-  // عربة اللاعب 🚃
-  cart = this.physics.add.sprite(400, 520, 'cart').setScale(0.5);
+  // 🚃 العربة (أصغر حجم)
+  cart = this.physics.add.sprite(400, 520, 'cart').setScale(0.35);
   cart.setCollideWorldBounds(true);
 
   // المجموعات
@@ -137,8 +137,8 @@ function createGame() {
   cursors = this.input.keyboard.createCursorKeys();
 
   // النصوص
-  scoreText = this.add.text(16, 16, 'النقاط: 0', { fontSize: '20px', fill: '#fff' });
-  coinText = this.add.text(16, 40, 'العملات: ' + coins, { fontSize: '20px', fill: '#ffd700' });
+  scoreText = this.add.text(16, 16, 'النقاط: 0', { fontSize: '18px', fill: '#fff' });
+  coinText = this.add.text(16, 40, 'العملات: ' + coins, { fontSize: '18px', fill: '#ffd700' });
 
   // الأصوات
   this.throwSound = this.sound.add('throw');
@@ -147,11 +147,40 @@ function createGame() {
   this.explosionSound = this.sound.add('explosionSound');
 
   // شاشة البداية 🟢
-  const startText = this.add.text(400, 300, 'اضغط للبدء', { fontSize: '32px', fill: '#00ff00' }).setOrigin(0.5);
+  const startText = this.add.text(400, 300, 'اضغط للبدء', {
+    fontSize: '30px',
+    fill: '#00ff00',
+  }).setOrigin(0.5);
+
+  // عند الضغط تبدأ اللعبة
   this.input.once('pointerdown', () => {
     startText.destroy();
     startGame.call(this);
   });
+}
+
+// دالة بدء اللعبة
+function startGame() {
+  this.input.on('pointerdown', () => shootProjectile.call(this));
+  this.physics.add.collider(projectiles, rocks, hitRock, null, this);
+
+  // الصخور 🪨
+  this.time.addEvent({
+    delay: 1800,
+    callback: spawnRock,
+    callbackScope: this,
+    loop: true
+  });
+
+  // تبديل الأسلحة 💣🪓
+  this.time.addEvent({
+    delay: 7000,
+    callback: switchWeapon,
+    callbackScope: this,
+    loop: true
+  });
+
+  score = 0;
 }
 
 // دالة بدء اللعب الحقيقي
@@ -186,16 +215,13 @@ function updateGame() {
   if (glowEffect) { glowEffect.x = cart.x; glowEffect.y = cart.y; }
 }
 function spawnRock() {
-  if (rocks.countActive(true) > 15) return;
   const x = Phaser.Math.Between(50, 750);
-  const rock = rocks.create(x, Phaser.Math.Between(50, 200), 'rock').setScale(0.8);
-  rock.setBounce(1, 1);
+  const rock = rocks.create(x, 0, 'rock').setScale(0.35);
+  rock.setVelocity(Phaser.Math.Between(-40, 40), Phaser.Math.Between(120, 180));
+  rock.setBounce(1);
   rock.setCollideWorldBounds(true);
-  rock.setVelocity(
-    Phaser.Math.Between(-rockSpeed, rockSpeed),
-    Phaser.Math.Between(-rockSpeed, rockSpeed)
-  );
 }
+
 function shootProjectile() {
   const now = Date.now();
   if (now - lastFire < 1000 / fireRate) return;
@@ -272,5 +298,6 @@ function saveData() {
 </script>
 </body>
 </html>
+
 
 

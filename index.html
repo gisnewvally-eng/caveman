@@ -55,16 +55,50 @@ function preloadMap() {
   this.load.image('levelIcon', 'images/level.png');
 }
 function createMap() {
-  this.add.image(400, 300, 'map').setScale(1.1);
-  this.add.text(400, 70, '🏔️ خريطة المستويات', { fontSize: '28px', fill: '#fff' }).setOrigin(0.5);
+  // الخلفية
+  this.add.image(400, 300, 'map').setScale(1.05);
 
+  // عنوان الخريطة
+  this.add.text(400, 70, '🏔️ خريطة المستويات', {
+    fontSize: '26px',
+    fill: '#ffffff',
+    fontStyle: 'bold'
+  }).setOrigin(0.5);
+
+  // توليد مراحل الخريطة
   for (let i = 1; i <= 5; i++) {
-    const x = 150 * i - 50;
-    const y = 300 + Phaser.Math.Between(-50, 50);
-    const icon = this.add.image(x, y, 'levelIcon').setScale(0.8).setInteractive();
-    icon.setTint(i <= level ? 0x00ff88 : 0x444444);
-    this.add.text(x, y + 40, 'مرحلة ' + i, { fontSize: '18px', fill: '#fff' }).setOrigin(0.5);
+    const x = 140 * i; // توزيع أفقي متناسق
+    const y = 300 + Phaser.Math.Between(-40, 40); // اختلاف بسيط بالارتفاع
+
+    // أيقونة المستوى
+    const icon = this.add.image(x, y, 'levelIcon')
+      .setScale(0.45) // ✅ تم التصغير من 0.8 إلى 0.45
+      .setInteractive({ useHandCursor: true });
+
+    // اللون: مفتوح أم مغلق
+    icon.setTint(i <= level ? 0x00ff88 : 0x555555);
+
+    // نص تحت الأيقونة
+    this.add.text(x, y + 40, 'مرحلة ' + i, {
+      fontSize: '16px',
+      fill: '#ffffff',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+
+    // مستوى متاح فقط
     if (i <= level) {
+      // 💫 تأثير بسيط للمستوى الحالي
+      if (i === level) {
+        this.tweens.add({
+          targets: icon,
+          alpha: { from: 0.6, to: 1 },
+          duration: 800,
+          yoyo: true,
+          repeat: -1
+        });
+      }
+
+      // بدء اللعبة عند الضغط
       icon.on('pointerdown', () => {
         stage = i;
         this.scene.start('GameScene');
@@ -72,6 +106,7 @@ function createMap() {
     }
   }
 }
+
 
 /* ==================== مشهد اللعبة ==================== */
 function preloadGame() {
@@ -237,4 +272,5 @@ function saveData() {
 </script>
 </body>
 </html>
+
 

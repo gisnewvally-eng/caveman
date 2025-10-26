@@ -1,545 +1,212 @@
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>⛏️ عامل المنجم - مع متجر وترقيات</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💣 عامل المنجم - خريطة المستويات</title>
 <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
 <style>
-  :root{--bg:#2f2016;--panel:#1f1410;--accent:#ffcc33;}
-  body{margin:0;font-family:"Cairo",sans-serif;background:var(--bg);color:#fff;display:flex;flex-direction:column;align-items:center;}
-  h2{margin:12px 0;}
-  #game { width:100%; max-width:900px; height:70vh; }
-  /* واجهة المتجر (overlay) */
-  .shop-overlay{
-    position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
-    background:rgba(0,0,0,0.6); z-index:999; visibility:hidden;
+  body {
+    margin: 0;
+    font-family: "Cairo", sans-serif;
+    background: #1b0e05;
+    color: white;
+    text-align: center;
   }
-  .shop {
-    width:320px; background:var(--panel); border-radius:12px; padding:16px; box-shadow:0 8px 30px rgba(0,0,0,0.6);
-    color:#fff; text-align:right;
-  }
-  .shop h3{margin:0 0 8px 0;}
-  .stat{display:flex;justify-content:space-between;margin:8px 0;padding:8px;border-radius:8px;background:rgba(255,255,255,0.02)}
-  .btn {background:var(--accent); color:#000; border:none; padding:8px 12px; border-radius:8px; cursor:pointer;}
-  .btn:disabled{opacity:0.5; cursor:not-allowed;}
-  .row{display:flex;gap:8px;align-items:center;justify-content:space-between}
-  .hud{position:absolute;left:12px;top:12px;z-index:10;text-align:left}
-  .hud div{margin-bottom:6px;background:rgba(0,0,0,0.3);padding:6px 8px;border-radius:8px}
-  .weapon-indicator{position:absolute;right:12px;top:12px;z-index:10;text-align:right}
+  #game { width: 100%; height: 100vh; }
 </style>
 </head>
 <body>
-  <h2>⛏️ عامل المنجم - نسخة المتصفح</h2>
-  <div id="game"></div>
-
-  <!-- HUD -->
-  <div class="hud">
-    <div id="scoreBox">النقاط: 0</div>
-    <div id="coinsBox">النقود: 0</div>
-    <div id="levelBox">المستوى: 1</div>
-  </div>
-
-  <div class="weapon-indicator" id="weaponBox">السلاح: فأس</div>
-
-  <!-- Shop overlay (يظهر بعد كل مستوى) -->
-  <div class="shop-overlay" id="shopOverlay">
-    <div class="shop" role="dialog" aria-modal="true">
-      <h3>🏪 متجر الترقيات</h3>
-      <p id="shopIntro">تهانينا! وصلت للمستوى <span id="shopLevel">1</span>. يمكنك شراء ترقيات قبل المتابعة.</p>
-
-      <div class="stat">
-        <div>سرعة الرمي (ضربات/ثانية)</div>
-        <div id="fireRateVal">1.0</div>
-      </div>
-      <div class="row">
-        <div>ترقية سرعة الرمي (+0.5)</div>
-        <div><button class="btn" id="buyFireRate">اشترِ - <span id="buyFireRateCost">50</span> 🪙</button></div>
-      </div>
-
-      <hr style="opacity:0.08;margin:12px 0;">
-
-      <div class="stat">
-        <div>نقود لكل صخرة</div>
-        <div id="coinPerRockVal">5</div>
-      </div>
-      <div class="row">
-        <div>ترقية ربحية النقود (+2)</div>
-        <div><button class="btn" id="buyCoinPerRock">اشترِ - <span id="buyCoinPerRockCost">60</span> 🪙</button></div>
-      </div>
-
-      <hr style="opacity:0.08;margin:12px 0;">
-
-      <div class="row" style="margin-top:10px;">
-        <button class="btn" id="skipShop">تخطي المتجر</button>
-        <button class="btn" id="continueGame">متابعة اللعبة</button>
-      </div>
-      <p style="font-size:12px;opacity:0.8;margin-top:8px">الترقيات محفوظة محليًا (localStorage).</p>
-    </div>
-  </div>
+<h2>🎮 عامل المنجم 🚃</h2>
+<div id="game"></div>
 
 <script>
-/* =========================
-  CONFIG — ضع أسماء ملفات الصور/الأصوات هنا
-  — إذا أردت استخدام ملفات محلية ضَعها في مجلد images/ و sounds/
-  — أمثلة مسارات محلية: 'images/cart.png' أو 'sounds/hit.mp3'
-  — أو اتركها كما هي لاستخدام روابط CDN الافتراضية
-   ========================= */
-const ASSETS = {
-  background: 'images/background.png', // ضع صورتك هنا أو رابط خارجي
-  cart:       'images/cart.png',
-  rock:       'images/rock.png',
-  pickaxe:    'images/pickaxe.png',
-  dynamite:   'images/dynamite.png',
-  explosion:  'images/explosion.png', // اختياري (سيستخدم أيضاً تأثير جرافيكي)
-  soundThrow: 'sounds/throw.mp3',
-  soundHit:   'sounds/hit.mp3',
-  soundBig:   'sounds/big_explosion.mp3'
-};
+/* إعداد المشهدات */
+const LevelMapScene = { key: 'LevelMapScene', preload: preloadMap, create: createMap };
+const GameScene = { key: 'GameScene', preload: preloadGame, create: createGame, update: updateGame };
+const ShopScene = { key: 'ShopScene', create: createShop };
 
-/* =========================
-  لعبة Phaser
-   ========================= */
 const config = {
   type: Phaser.AUTO,
-  width: 900,
+  width: 800,
   height: 600,
   parent: 'game',
-  physics: {
-    default: 'arcade',
-    arcade: { gravity: { y: 150 }, debug: false }
-  },
-  scale: {
-    mode: Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.CENTER_BOTH
-  },
-  scene: { preload, create, update }
+  physics: { default: 'arcade', arcade: { gravity: { y: 200 }, debug: false } },
+  scene: [LevelMapScene, GameScene, ShopScene]
 };
-
-let gameState = {
-  cart: null,
-  rocks: null,
-  projectiles: null,
-  cursors: null,
-  score: 0,
-  coins: 0,
-  level: 1,
-  weapon: 'pickaxe', // 'pickaxe' or 'dynamite'
-  fireRate: 1.0, // ضربات في الثانية
-  coinPerRock: 5,
-  lastShotTime: 0,
-  rockSpeed: 180
-};
-
-const LS_KEY = 'miner_game_data_v1';
-
-loadLocalData();
-
 const game = new Phaser.Game(config);
 
-function preload() {
-  // نحاول تحميل الموارد من المسارات المحددة أعلاه
-  // إذا لم تكن متوفرة، حاول أن تتأكد عند رفعك للملفات
-  this.load.image('background', ASSETS.background);
-  this.load.image('cart', ASSETS.cart);
-  this.load.image('rock', ASSETS.rock);
-  this.load.image('pickaxe', ASSETS.pickaxe);
-  this.load.image('dynamite', ASSETS.dynamite);
-  this.load.image('explosion', ASSETS.explosion);
+let cart, cursors, rocks, projectiles, scoreText, coinText, glowEffect;
+let score = 0, coins = 0, level = 1, stage = 1;
+let weaponType = 'pickaxe', rockSpeed = 200, fireRate = 1, moneyBoost = 1;
+let lastFire = 0;
 
-  // أصوات (قد لا تعمل محلياً إذا المسارات غير صحيحة)
-  this.load.audio('soundThrow', ASSETS.soundThrow);
-  this.load.audio('soundHit', ASSETS.soundHit);
-  this.load.audio('soundBig', ASSETS.soundBig);
+/* حفظ البيانات */
+const saved = JSON.parse(localStorage.getItem('minerData') || '{}');
+if (saved.coins) coins = saved.coins;
+if (saved.level) level = saved.level;
+if (saved.stage) stage = saved.stage;
+if (saved.fireRate) fireRate = saved.fireRate;
+if (saved.moneyBoost) moneyBoost = saved.moneyBoost;
+
+/* ==================== خريطة المستويات ==================== */
+function preloadMap() {
+  this.load.image('map', 'images/map.png');
+  this.load.image('levelIcon', 'images/level.png');
 }
+function createMap() {
+  this.add.image(400, 300, 'map').setScale(1.1);
+  this.add.text(400, 70, '🏔️ خريطة المستويات', { fontSize: '28px', fill: '#fff' }).setOrigin(0.5);
 
-function create() {
-  // خلفية
-  this.add.rectangle(450,300,900,600,0x3b2a1f).setDepth(-2);
-  try { this.add.image(450,300,'background').setScale(1.1).setDepth(-1); } catch(e){}
-
-  // اللاعب والعربة
-  gameState.cart = this.physics.add.sprite(450, 520, 'cart').setScale(0.8).setCollideWorldBounds(true);
-
-  // مجموعات
-  gameState.rocks = this.physics.add.group(); // ملاحظة: لن نضيف تصادم داخلي بينها
-  gameState.projectiles = this.physics.add.group();
-
-  // HUD وعناصر DOM
-  updateHUD();
-
-  // دخول الانطباعات (pointer + keyboard)
-  gameState.cursors = this.input.keyboard.createCursorKeys();
-  this.input.on('pointerdown', pointer => attemptShoot(this, pointer));
-
-  // فيزياء: رصاصة تصطدم بصخرة
-  this.physics.add.collider(gameState.projectiles, gameState.rocks, (proj, rock) => {
-    onRockHit(this, proj, rock);
-  });
-
-  // لا نريد تصادم الصخور مع بعضها => لا تضف collider between rocks
-
-  // جيل الصخور بشكل مستمر
-  this.time.addEvent({ delay: 1200, callback: () => spawnRock(this), callbackScope: this, loop: true });
-
-  // تبديل السلاح كل 8 ثواني (يمكن تغييره)
-  this.time.addEvent({ delay: 8000, callback: () => switchWeapon(), callbackScope: this, loop: true });
-
-  // زيادة صعوبة (سرعة الصخور) كل 12 ثانية
-  this.time.addEvent({ delay: 12000, callback: () => increaseRockSpeed(), callbackScope: this, loop: true });
-
-  // إنشاء textures بسيطة للشرارات/الجسيمات إن لم توجد صور
-  createParticleTextures(this);
-
-  // أصوات
-  this.soundThrow = this.sound.add('soundThrow', { volume: 0.25, rate: 1 });
-  this.soundHit = this.sound.add('soundHit', { volume: 0.3 });
-  this.soundBig = this.sound.add('soundBig', { volume: 0.5 });
-
-  // إعدادات المتجر DOM
-  setupShopDOM(this);
-}
-
-function update(time, delta) {
-  // حركة العربة
-  gameState.cart.setVelocityX(0);
-  if (gameState.cursors.left.isDown) gameState.cart.setVelocityX(-260);
-  else if (gameState.cursors.right.isDown) gameState.cart.setVelocityX(260);
-
-  // تصرف الصخور: نضمن أنها لا تخرج من الشاشة وتارتد من الحواف
-  gameState.rocks.children.iterate(rock => {
-    if (!rock || !rock.body) return;
-    // إذا اقتربت من الحواف، تتعامل فيزياء world bounce معها
-    // لكن تأكد من أن السرعة الأفقية تحت عتبة معقولة
-    const maxV = gameState.rockSpeed;
-    if (rock.body.velocity.x > maxV) rock.setVelocityX(maxV);
-    if (rock.body.velocity.x < -maxV) rock.setVelocityX(-maxV);
-    if (rock.body.velocity.y > maxV) rock.setVelocityY(maxV);
-    if (rock.body.velocity.y < -maxV) rock.setVelocityY(-maxV);
-  });
-
-  // تحديث HUD دوري (يمكن تحديث فقط عند التغير لكن هذا سهل)
-  updateHUD();
-}
-
-/* =========================
-   وظائف اللعبة الأساسية
-   ========================= */
-
-function spawnRock(scene) {
-  // حد أقصى للصخور النشطة لتجنب استهلاك الذاكرة
-  if (gameState.rocks.countActive(true) >= 20) return;
-
-  const x = Phaser.Math.Between(60, config.width - 60);
-  const y = Phaser.Math.Between(60, 220);
-  const r = gameState.rocks.create(x, y, 'rock').setScale(0.75);
-  r.setBounce(1);
-  r.setCollideWorldBounds(true);
-  // سرعة عشوائية داخل النطاق rockSpeed
-  const vx = Phaser.Math.Between(-gameState.rockSpeed, gameState.rockSpeed);
-  const vy = Phaser.Math.Between(-gameState.rockSpeed/2, gameState.rockSpeed);
-  r.setVelocity(vx, vy);
-  r.setData('hp', 1); // يمكنك توسيع لكل صخرة HP لو أردت
-  r.setData('id', Date.now() + Math.random());
-}
-
-function attemptShoot(scene, pointer) {
-  // تحقق من توقيت النار بناء على fireRate (ضربات/ثانية)
-  const now = scene.time.now;
-  const cooldown = 1000 / gameState.fireRate;
-  if (now - gameState.lastShotTime < cooldown) return;
-  gameState.lastShotTime = now;
-  shoot(scene);
-}
-
-function shoot(scene) {
-  // صوت الرمي
-  try { scene.soundThrow.play(); } catch(e) {}
-  const proj = gameState.projectiles.create(gameState.cart.x, gameState.cart.y - 30, gameState.weapon).setScale(0.6);
-  proj.setVelocityY(-500);
-  proj.setCollideWorldBounds(false);
-  // اجعل الرصاصة تدمر نفسها بعد 2.5 ثانية إذا لم تصب شيئًا
-  scene.time.delayedCall(2500, () => { if (proj && proj.active) proj.destroy(); });
-
-  // تأثير بصري صغير على الرمي
-  if (gameState.weapon === 'pickaxe') {
-    // شرارات أمام العربة
-    createSparkEffect(scene, gameState.cart.x, gameState.cart.y - 50, 8, 300);
-  } else {
-    // ديناميت: وميض قصير أمام العربة
-    createBigMuzzle(scene, gameState.cart.x, gameState.cart.y - 50);
-  }
-}
-
-function onRockHit(scene, projectile, rock) {
-  // تدمير الرصاصة
-  try { projectile.destroy(); } catch(e){}
-
-  // تأثير صوت ومرئي يعتمد على السلاح
-  if (gameState.weapon === 'pickaxe') {
-    try { scene.soundHit.play(); } catch(e){}
-    createSparkEffect(scene, rock.x, rock.y, 12, 400);
-  } else {
-    try { scene.soundBig.play(); } catch(e){}
-    createExplosion(scene, rock.x, rock.y);
-  }
-
-  // منح نقاط ونقود
-  const pointsGain = (gameState.weapon === 'pickaxe') ? 10 : 20;
-  gameState.score += pointsGain;
-  gameState.coins += gameState.coinPerRock;
-
-  // تزويد تقدم المستوى: عند كل 100 نقطة = مستوى جديد
-  const nextLevelThreshold = gameState.level * 100;
-  if (gameState.score >= nextLevelThreshold) {
-    // توقف مؤقت للعبة وفتح المتجر
-    gameState.level++;
-    // تحفظ البيانات ثم عرض المتجر
-    saveLocalData();
-    openShop();
-  }
-
-  // تدمير الصخرة
-  try { rock.destroy(); } catch(e){}
-  saveLocalData();
-}
-
-/* =========================
-   تأثيرات بصرية وصوتية (شرارات / انفجار)
-   ========================= */
-
-function createParticleTextures(scene) {
-  // نرسم texture صغير للشرارة إذا لم يوجد
-  if (!scene.textures.exists('spark')) {
-    const g = scene.add.graphics();
-    g.fillStyle(0xffdd66, 1);
-    g.fillCircle(4,4,4);
-    g.generateTexture('spark', 8, 8);
-    g.destroy();
-  }
-  if (!scene.textures.exists('bigBlast')) {
-    const g2 = scene.add.graphics();
-    g2.fillStyle(0xff9933, 1);
-    g2.fillCircle(16,16,16);
-    g2.generateTexture('bigBlast', 32, 32);
-    g2.destroy();
-  }
-}
-
-function createSparkEffect(scene, x, y, count=10, lifespan=500) {
-  const particles = scene.add.particles('spark');
-  const emitter = particles.createEmitter({
-    x:x, y:y,
-    speed: { min: 80, max: 220 },
-    angle: { min: -160, max: -20 },
-    gravityY: 300,
-    lifespan: lifespan,
-    quantity: count,
-    scale: { start: 0.6, end: 0 },
-    blendMode: 'ADD'
-  });
-  scene.time.delayedCall(lifespan, () => { particles.destroy(); });
-}
-
-function createBigMuzzle(scene, x, y) {
-  const flash = scene.add.rectangle(x, y, 60, 30, 0xffe6b3).setAlpha(0.9).setDepth(5);
-  scene.tweens.add({ targets: flash, alpha:0, duration:180, ease:'Cubic.easeOut', onComplete: ()=>flash.destroy() });
-}
-
-function createExplosion(scene, x, y) {
-  const particles = scene.add.particles('bigBlast');
-  const emitter = particles.createEmitter({
-    x:x, y:y,
-    speed: { min: 100, max: 400 },
-    angle: { min: 0, max: 360 },
-    gravityY: 600,
-    lifespan: 700,
-    scale: { start: 1.0, end: 0 },
-    quantity: 30,
-    blendMode: 'ADD'
-  });
-  // اهتزاز أقوى للشاشة
-  scene.cameras.main.shake(350, 0.02);
-  scene.time.delayedCall(700, () => { particles.destroy(); });
-}
-
-/* =========================
-   تغيير السلاح وازدياد سرعة الصخور
-   ========================= */
-
-function switchWeapon() {
-  gameState.weapon = (gameState.weapon === 'pickaxe') ? 'dynamite' : 'pickaxe';
-  updateWeaponBox();
-}
-
-function increaseRockSpeed() {
-  gameState.rockSpeed += 25;
-  // نزيد سرعات الصخور الحالية أيضاً بشكل طفيف
-  gameState.rocks.children.iterate(r => {
-    if (r && r.body) {
-      const vx = Phaser.Math.Between(-gameState.rockSpeed, gameState.rockSpeed);
-      const vy = Phaser.Math.Between(-gameState.rockSpeed/2, gameState.rockSpeed);
-      r.setVelocity(vx, vy);
+  for (let i = 1; i <= 5; i++) {
+    const x = 150 * i - 50;
+    const y = 300 + Phaser.Math.Between(-50, 50);
+    const icon = this.add.image(x, y, 'levelIcon').setScale(0.8).setInteractive();
+    icon.setTint(i <= level ? 0x00ff88 : 0x444444);
+    this.add.text(x, y + 40, 'مرحلة ' + i, { fontSize: '18px', fill: '#fff' }).setOrigin(0.5);
+    if (i <= level) {
+      icon.on('pointerdown', () => {
+        stage = i;
+        this.scene.start('GameScene');
+      });
     }
-  });
-}
-
-/* =========================
-   متجر (Shop) — DOM
-   ========================= */
-
-function setupShopDOM(scene) {
-  const shopOverlay = document.getElementById('shopOverlay');
-  const buyFireRateBtn = document.getElementById('buyFireRate');
-  const buyCoinBtn = document.getElementById('buyCoinPerRock');
-  const continueBtn = document.getElementById('continueGame');
-  const skipBtn = document.getElementById('skipShop');
-
-  // تحديث قيم العرض داخل المتجر
-  function refreshShopDisplay() {
-    document.getElementById('shopLevel').textContent = gameState.level;
-    document.getElementById('fireRateVal').textContent = gameState.fireRate.toFixed(1);
-    document.getElementById('coinPerRockVal').textContent = gameState.coinPerRock;
-    // حساب تكاليف مبسطة (تصاعدية)
-    const costFire = Math.round(50 * Math.pow(1.6, (gameState.fireRate - 1)/0.5));
-    const costCoin = Math.round(60 * Math.pow(1.5, (gameState.coinPerRock - 5)/2));
-    document.getElementById('buyFireRateCost').textContent = costFire;
-    document.getElementById('buyCoinPerRockCost').textContent = costCoin;
-    buyFireRateBtn.disabled = (gameState.coins < costFire);
-    buyCoinBtn.disabled = (gameState.coins < costCoin);
   }
+}
 
-  buyFireRateBtn.addEventListener('click', () => {
-    const cost = parseInt(document.getElementById('buyFireRateCost').textContent);
-    if (gameState.coins >= cost) {
-      gameState.coins -= cost;
-      gameState.fireRate = +(gameState.fireRate + 0.5).toFixed(1);
-      saveLocalData();
-      refreshShopDisplay();
-      updateHUD();
-    }
+/* ==================== مشهد اللعبة ==================== */
+function preloadGame() {
+  this.load.image('background', 'images/background.png');
+  this.load.image('cart', 'images/cart.png');
+  this.load.image('rock', 'images/rock.png');
+  this.load.image('pickaxe', 'images/pickaxe.png');
+  this.load.image('dynamite', 'images/dynamite.png');
+  this.load.image('explosion', 'images/explosion.png');
+  this.load.image('coin', 'images/coin.png');
+  this.load.image('glow', 'images/glow.png');
+  this.load.audio('throw', 'sounds/throw.mp3');
+  this.load.audio('hit', 'sounds/hit.mp3');
+  this.load.audio('coin', 'sounds/coin.mp3');
+  this.load.audio('explosionSound', 'sounds/explosion.mp3');
+}
+function createGame() {
+  this.add.image(400, 300, 'background').setScale(1.2);
+  cart = this.physics.add.sprite(400, 520, 'cart').setScale(0.8).setCollideWorldBounds(true);
+  rocks = this.physics.add.group();
+  projectiles = this.physics.add.group();
+  cursors = this.input.keyboard.createCursorKeys();
+
+  scoreText = this.add.text(16, 16, 'النقاط: 0', { fontSize: '22px', fill: '#fff' });
+  coinText = this.add.text(16, 45, 'العملات: ' + coins, { fontSize: '22px', fill: '#ffd700' });
+
+  this.input.on('pointerdown', () => shootProjectile.call(this));
+  this.physics.add.collider(projectiles, rocks, hitRock, null, this);
+
+  this.time.addEvent({ delay: 1500, callback: spawnRock, callbackScope: this, loop: true });
+  this.time.addEvent({ delay: 8000, callback: switchWeapon, callbackScope: this, loop: true });
+
+  this.throwSound = this.sound.add('throw');
+  this.hitSound = this.sound.add('hit');
+  this.coinSound = this.sound.add('coin');
+  this.explosionSound = this.sound.add('explosionSound');
+
+  score = 0;
+}
+function updateGame() {
+  cart.setVelocityX(0);
+  if (cursors.left.isDown) cart.setVelocityX(-250);
+  else if (cursors.right.isDown) cart.setVelocityX(250);
+
+  rocks.children.iterate(rock => {
+    if (!rock) return;
+    if (rock.y > 580) rock.setVelocityY(-Phaser.Math.Between(rockSpeed * 0.6, rockSpeed));
+    if (rock.y < 20) rock.setVelocityY(Phaser.Math.Between(rockSpeed * 0.5, rockSpeed));
   });
-
-  buyCoinBtn.addEventListener('click', () => {
-    const cost = parseInt(document.getElementById('buyCoinPerRockCost').textContent);
-    if (gameState.coins >= cost) {
-      gameState.coins -= cost;
-      gameState.coinPerRock += 2;
-      saveLocalData();
-      refreshShopDisplay();
-      updateHUD();
-    }
+  if (glowEffect) { glowEffect.x = cart.x; glowEffect.y = cart.y; }
+}
+function spawnRock() {
+  if (rocks.countActive(true) > 15) return;
+  const x = Phaser.Math.Between(50, 750);
+  const rock = rocks.create(x, Phaser.Math.Between(50, 200), 'rock').setScale(0.8);
+  rock.setBounce(1, 1);
+  rock.setCollideWorldBounds(true);
+  rock.setVelocity(
+    Phaser.Math.Between(-rockSpeed, rockSpeed),
+    Phaser.Math.Between(-rockSpeed, rockSpeed)
+  );
+}
+function shootProjectile() {
+  const now = Date.now();
+  if (now - lastFire < 1000 / fireRate) return;
+  lastFire = now;
+  this.throwSound.play({ volume: 0.2 });
+  const projectile = projectiles.create(cart.x, cart.y - 30, weaponType).setScale(0.6);
+  projectile.setVelocityY(-400);
+}
+function hitRock(projectile, rock) {
+  this.hitSound.play({ volume: 0.3 });
+  createExplosion.call(this, rock.x, rock.y);
+  projectile.destroy(); rock.destroy();
+  score += (weaponType === 'pickaxe' ? 10 : 20);
+  coins += Math.floor(5 * moneyBoost);
+  scoreText.setText('النقاط: ' + score);
+  coinText.setText('العملات: ' + coins);
+  this.coinSound.play({ volume: 0.3 });
+  createCoinEffect.call(this, rock.x, rock.y);
+  glowAroundCart.call(this);
+  saveData();
+  if (score >= 100) this.scene.start('ShopScene');
+}
+function createExplosion(x, y) {
+  const explosion = this.add.sprite(x, y, 'explosion').setScale(0.8);
+  const color = weaponType === 'dynamite' ? 0xff6600 : 0xffffcc;
+  explosion.setTint(color);
+  if (weaponType === 'dynamite') this.explosionSound.play({ volume: 0.5 });
+  this.cameras.main.shake(150, 0.02);
+  this.tweens.add({ targets: explosion, alpha: 0, scale: 1.5, duration: 400, onComplete: () => explosion.destroy() });
+  if (weaponType === 'dynamite') {
+    const colors = [0xff4400, 0xffa500, 0xffff00];
+    const flashColor = Phaser.Utils.Array.GetRandom(colors);
+    const flash = this.add.rectangle(400, 300, 800, 600, flashColor, 0.4);
+    this.tweens.add({ targets: flash, alpha: 0, duration: 300, ease: 'Cubic.easeOut', onComplete: () => flash.destroy() });
+  }
+}
+function createCoinEffect(x, y) {
+  const coin = this.add.sprite(x, y, 'coin').setScale(0.5);
+  this.tweens.add({ targets: coin, y: y - 50, alpha: 0, duration: 600, onComplete: () => coin.destroy() });
+}
+function glowAroundCart() {
+  if (glowEffect) glowEffect.destroy();
+  glowEffect = game.scene.keys.GameScene.add.sprite(cart.x, cart.y, 'glow').setScale(1.5).setAlpha(0.8);
+  glowEffect.setBlendMode(Phaser.BlendModes.ADD);
+  game.scene.keys.GameScene.tweens.add({
+    targets: glowEffect, alpha: 0, scale: 2, duration: 600,
+    ease: 'Cubic.easeOut', onComplete: () => { glowEffect.destroy(); glowEffect = null; }
   });
+}
+function switchWeapon() { weaponType = weaponType === 'pickaxe' ? 'dynamite' : 'pickaxe'; }
 
-  continueBtn.addEventListener('click', () => {
-    closeShop();
+/* ==================== مشهد المتجر ==================== */
+function createShop() {
+  const shopBg = this.add.rectangle(400, 300, 600, 400, 0x000000, 0.85);
+  this.add.text(400, 180, '🏪 المتجر - المرحلة ' + stage, { fontSize: '28px', fill: '#fff' }).setOrigin(0.5);
+  const upgradeFire = this.add.text(400, 260, '⚡ زيادة سرعة الضرب: 50 عملة', { fontSize: '22px', fill: '#ffd700' }).setOrigin(0.5).setInteractive();
+  const upgradeMoney = this.add.text(400, 320, '💰 مضاعفة النقود: 70 عملة', { fontSize: '22px', fill: '#ffd700' }).setOrigin(0.5).setInteractive();
+  const continueBtn = this.add.text(400, 400, 'استمرار ▶️', { fontSize: '24px', fill: '#00ff00' }).setOrigin(0.5).setInteractive();
+
+  upgradeFire.on('pointerdown', () => { if (coins >= 50) { coins -= 50; fireRate += 0.5; saveData(); } });
+  upgradeMoney.on('pointerdown', () => { if (coins >= 70) { coins -= 70; moneyBoost += 0.5; saveData(); } });
+  continueBtn.on('pointerdown', () => {
+    stage++;
+    if (stage > level) level++;
+    saveData();
+    this.scene.start('LevelMapScene');
   });
-
-  skipBtn.addEventListener('click', () => {
-    closeShop();
-  });
-
-  // دالة لفتح المتجر (ستوقف لعبة Phaser مؤقتًا)
-  window.openShop = function() {
-    // إظهار overlay
-    shopOverlay.style.visibility = 'visible';
-    // إيقاف مؤقت للمشهد
-    scene.scene.pause();
-    refreshShopDisplay();
-  };
-
-  window.closeShop = function() {
-    shopOverlay.style.visibility = 'hidden';
-    scene.scene.resume();
-    saveLocalData();
-    updateHUD();
-  };
-
-  // عند أول تحميل، تحديث العرض
-  refreshShopDisplay();
 }
 
-/* =========================
-   HUD و التخزين المحلي
-   ========================= */
-
-function updateHUD() {
-  document.getElementById('scoreBox').textContent = 'النقاط: ' + gameState.score;
-  document.getElementById('coinsBox').textContent = 'النقود: ' + gameState.coins;
-  document.getElementById('levelBox').textContent = 'المستوى: ' + gameState.level;
-  updateWeaponBox();
+/* ==================== حفظ البيانات ==================== */
+function saveData() {
+  localStorage.setItem('minerData', JSON.stringify({ coins, level, stage, fireRate, moneyBoost }));
 }
-
-function updateWeaponBox() {
-  document.getElementById('weaponBox').textContent = 'السلاح: ' + (gameState.weapon === 'pickaxe' ? 'فأس' : 'ديناميت');
-}
-
-function saveLocalData() {
-  const payload = {
-    score: gameState.score,
-    coins: gameState.coins,
-    level: gameState.level,
-    fireRate: gameState.fireRate,
-    coinPerRock: gameState.coinPerRock,
-    rockSpeed: gameState.rockSpeed,
-    weapon: gameState.weapon
-  };
-  localStorage.setItem(LS_KEY, JSON.stringify(payload));
-}
-
-function loadLocalData() {
-  const raw = localStorage.getItem(LS_KEY);
-  if (!raw) return;
-  try {
-    const data = JSON.parse(raw);
-    gameState.score = data.score || 0;
-    gameState.coins = data.coins || 0;
-    gameState.level = data.level || 1;
-    gameState.fireRate = data.fireRate || 1.0;
-    gameState.coinPerRock = data.coinPerRock || 5;
-    gameState.rockSpeed = data.rockSpeed || 180;
-    gameState.weapon = data.weapon || 'pickaxe';
-  } catch(e){ console.warn('Failed to load local data', e); }
-}
-
-/* helper لتعيين المتغيرات من localData قبل إنشاء اللعبة (ندعوها أعلاه) */
-function loadLocalData() {
-  const raw = localStorage.getItem(LS_KEY);
-  if (!raw) return;
-  try {
-    const data = JSON.parse(raw);
-    if (data.score !== undefined) gameState.score = data.score;
-    if (data.coins !== undefined) gameState.coins = data.coins;
-    if (data.level !== undefined) gameState.level = data.level;
-    if (data.fireRate !== undefined) gameState.fireRate = data.fireRate;
-    if (data.coinPerRock !== undefined) gameState.coinPerRock = data.coinPerRock;
-    if (data.rockSpeed !== undefined) gameState.rockSpeed = data.rockSpeed;
-    if (data.weapon !== undefined) gameState.weapon = data.weapon;
-  } catch(e){}
-}
-
-/* =========================
-   تعليمات سريعة لوضع الصور والأصوات
-   =========================
-   • ضع ملفات الصور داخل مجلد باسم images/ (في نفس مجلد index.html):
-     - images/background.png    ← الخلفية (اختياري)
-     - images/cart.png          ← صورة العربة (مقاس تقريبي 200x100)
-     - images/rock.png          ← صورة الصخرة (مربعة أو دائرية)
-     - images/pickaxe.png       ← أيقونة/صورة للفأس (صغيرة)
-     - images/dynamite.png      ← أيقونة للديناميت
-     - images/explosion.png     ← صورة انفجار (اختياري)
-
-   • ضع ملفات الصوت داخل مجلد sounds/:
-     - sounds/throw.mp3
-     - sounds/hit.mp3
-     - sounds/big_explosion.mp3
-
-   • إذا لم تضع الملفات سيحاول المحرك تحميل المسارات ولكن قد ترى أخطاء في وحدة التحميل
-     (لذلك أنصح بتعبئة الملفات محليًا ثم تجرب).
-
-   • بعد وضع الملفات، ارفع كامل المجلد إلى GitHub Pages أو Netlify.
-   ========================= */
-
 </script>
 </body>
 </html>

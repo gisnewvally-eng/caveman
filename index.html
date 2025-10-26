@@ -72,7 +72,7 @@ function createMap() {
 
     // أيقونة المستوى
     const icon = this.add.image(x, y, 'levelIcon')
-      .setScale(0.45) // ✅ تم التصغير من 0.8 إلى 0.45
+      .setScale(0.3) // ✅ تم التصغير من 0.8 إلى 0.45
       .setInteractive({ useHandCursor: true });
 
     // اللون: مفتوح أم مغلق
@@ -128,7 +128,7 @@ function createGame() {
   this.add.image(400, 300, 'background').setScale(0.85);
 
   // 🚃 العربة (أصغر حجم)
-  cart = this.physics.add.sprite(400, 520, 'cart').setScale(0.35);
+  cart = this.physics.add.sprite(400, 520, 'cart').setScale(0.3);
   cart.setCollideWorldBounds(true);
 
   // المجموعات
@@ -216,7 +216,7 @@ function updateGame() {
 }
 function spawnRock() {
   const x = Phaser.Math.Between(50, 750);
-  const rock = rocks.create(x, 0, 'rock').setScale(0.35);
+  const rock = rocks.create(x, 0, 'rock').setScale(0.2);
   rock.setVelocity(Phaser.Math.Between(-40, 40), Phaser.Math.Between(120, 180));
   rock.setBounce(1);
   rock.setCollideWorldBounds(true);
@@ -227,7 +227,7 @@ function shootProjectile() {
   if (now - lastFire < 1000 / fireRate) return;
   lastFire = now;
   this.throwSound.play({ volume: 0.2 });
-  const projectile = projectiles.create(cart.x, cart.y - 30, weaponType).setScale(0.6);
+  const projectile = projectiles.create(cart.x, cart.y - 30, weaponType).setScale(0.3);
   projectile.setVelocityY(-400);
 }
 function hitRock(projectile, rock) {
@@ -298,6 +298,7 @@ function saveData() {
 </script>
 </body>
 </html>
+
 
 
 
